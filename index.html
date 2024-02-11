@@ -1,0 +1,152 @@
+<html>
+  <head>
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/leaflet@1.4.0/dist/leaflet.css"
+      integrity="sha512-puBpdR0798OZvTTbP4A8Ix/l+A4dHDD0DGqYW6RQ+9jxkRFclaxxQb/SJAWZfWAkuyeQUytO7+7N4QKrDh+drA=="
+      crossorigin=""
+    />
+    <script
+      src="https://unpkg.com/leaflet@1.4.0/dist/leaflet.js"
+      integrity="sha512-QVftwZFqvtRNi0ZyCtsznlKSWOStnDORoefr1enyq5mVL4tmKB3S/EnC3rRJcxCPavG10IcrVGSmPh6Qw5lwrg=="
+      crossorigin=""
+    ></script>
+
+    <script src="india_district.json"></script>
+    <style>
+      #mapid {
+        width: 820;
+        height: 720px;
+        margin-left: 350px;
+        padding: 20px;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="mapid"></div>
+
+    <script>
+
+              var layer = new L.TileLayer('http://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png');
+
+
+               function highlightFeature(e) {
+                var layer = e.target;
+console.log(layer,"hi from highlight");
+                layer.setStyle({
+                    weight: 5,
+                    color: '#666',
+                    dashArray: '',
+                    fillOpacity: 0.7
+                });
+
+                layer.bringToFront();
+            }
+
+            function resetHighlight(e) {
+          geojson.resetStyle(e.target);
+      }
+      var customStyle = {
+        fillColor: 'transparent',
+        color: 'white',
+        weight: 0,
+        opacity: 1,
+        fillOpacity:0.5
+      }
+
+                var basicMap = L.map('mapid').setView([23.579732, 80.442383],5);
+
+                var geoJsonLayer=L.geoJSON(states, {
+                style: customStyle /*function(feature) {
+                    switch (feature.properties.TYPE) {
+                        case  "Union Territory": return {color: "#ff0000"};
+                        case 'State':   return {color: "#0000ff"};
+                    }
+                }*/
+            ,
+
+                onEachFeature: function(feature,layer){
+               
+                layer.bindPopup('Popup content');
+                var temp='';
+                var location='';
+                //mouseover also there
+                layer.on('click',function(){
+                  console.log('Mouse over event',feature.properties);
+                 (async ()=>{
+                  try {
+                    layer.setPopupContent("Loading...");
+                    const responsePromise =  apiCall(feature.properties.NAME_2);
+                    responsePromise.then(responseData =>{
+                      temp=responseData.current.temp_c;
+                      location=responseData.location.name;
+                      updatePopupContent(temp,location);
+                      
+                    }).catch(error =>{
+                      console.error('There was a problem fetching data ',error);
+                    });
+                    
+                  }
+                  catch(error){
+                    console.error('There was a problem fetching data : ', error);
+                  }
+                 })();
+                });
+                console.log('now temp ',temp);
+                var value="Popup new"+ temp;
+                //layer.bindPopup('Popup content '+temp);
+                layer.setPopupContent("Loading...");
+               }}).addTo(basicMap);
+
+                     // Creating a Layer object
+
+                     // Adding layer to the map
+                     basicMap.addLayer(layer);
+               // var jsonLayer = L.geoJSON(states).addTo(basicMap);
+
+
+              function updatePopupContent(temperature,location){
+                console.log("updatePopupContent ",temperature);
+                var content=`<p>Current Temp : ${temperature} °C</p><p>Location : ${location}</p>`;
+                geoJsonLayer.eachLayer(function(layer){
+                  layer.setPopupContent(content);
+                })
+              }
+
+              async function apiCall(place){
+                const url ="http://api.weatherapi.com/v1/current.json";
+
+                const body ={};
+                const apiKey='1d5279c0e48c4dd4a4e101603241002';
+
+                const queryParams={
+                  key:apiKey,
+                  q:place
+                };
+
+                const queryString= Object.keys(queryParams).map(key=>
+                encodeURIComponent(key) + '='+encodeURIComponent(queryParams[key])).join('&');
+                console.log(queryString)
+                const apiUrl=url+'?'+queryString;
+                
+                const fetchOptions={
+                  method:'GET',
+                  headers:{
+                    'Content-Type':'application/json',
+                  }
+                }
+                console.log(apiUrl);
+               return fetch(apiUrl,fetchOptions).then(response=>{
+                  if(!response.ok){
+                    throw new Error('Network not responsding');
+                  }
+                  //console.log("response json",response.json())
+                  return response.json();
+
+                }).catch(error =>{
+                  console.error('Error occurred ',error);
+                })
+               }
+    </script>
+  </body>
+</html>
