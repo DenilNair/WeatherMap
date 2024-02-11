@@ -77,16 +77,6 @@
         "t5560":"#002b03"
       };
 
-      fetch('district_json.json').
-      then(response => response.json())
-      .then(data =>{
-        console.log(data.features.length);
-      })
-      .catch(error =>
-      console.error('Error loading JSOn file',error));
-
-      //for(let i=0;i<)
-
       var basicMap = L.map("mapid").setView([23.579732, 80.442383], 5);
 
       var geoJsonLayer = L.geoJSON(states, {
