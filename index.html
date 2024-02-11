@@ -1,6 +1,9 @@
 <html>
   <head>
-  <meta http-equiv="Content-Security-Policy" content="upgrade-insecure-requests">
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="upgrade-insecure-requests"
+    />
     <link
       rel="stylesheet"
       href="https://unpkg.com/leaflet@1.4.0/dist/leaflet.css"
@@ -14,6 +17,7 @@
     ></script>
 
     <script src="india_district.json"></script>
+     <script src="script.js"></script>
     <style>
       #mapid {
         width: 820;
@@ -27,127 +31,160 @@
     <div id="mapid"></div>
 
     <script>
+      var layer = new L.TileLayer(
+        "http://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+      );
 
-              var layer = new L.TileLayer('http://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png');
+      function highlightFeature(e) {
+        var layer = e.target;
+        console.log(layer, "hi from highlight");
+        layer.setStyle({
+          weight: 5,
+          color: "#666",
+          dashArray: "",
+          fillOpacity: 0.7,
+        });
 
+        layer.bringToFront();
+      }
 
-               function highlightFeature(e) {
-                var layer = e.target;
-console.log(layer,"hi from highlight");
-                layer.setStyle({
-                    weight: 5,
-                    color: '#666',
-                    dashArray: '',
-                    fillOpacity: 0.7
-                });
-
-                layer.bringToFront();
-            }
-
-            function resetHighlight(e) {
-          geojson.resetStyle(e.target);
+      function resetHighlight(e) {
+        geojson.resetStyle(e.target);
       }
       var customStyle = {
-        fillColor: 'transparent',
-        color: 'white',
+        fillColor: "transparent",
+        color: "white",
         weight: 0,
         opacity: 1,
-        fillOpacity:0.5
+        fillOpacity: 0.5,
+      };
+
+      var temperature_colorcode={
+        "t1005":"#002b03",
+        "t050":"#25a8fa",
+        "t005":"#47b7fc",
+        "t510":"#87d1ff",
+        "t1015":"#9fd9fc",
+        "t1520":"#c4e9ff",
+        "t2025":"#fcdea9",
+        
+        "t2530":"#fcc59a",
+        "t3035":"#ff875e",
+        "t3540":"#5c0101",
+        "t4045":"#fa6555",
+        "t4550":"#fa3620",
+        "t5055":"#9e1102",
+        "t5560":"#002b03"
+      };
+
+      fetch('district_json.json').
+      then(response => response.json())
+      .then(data =>{
+        console.log(data.features.length);
+      })
+      .catch(error =>
+      console.error('Error loading JSOn file',error));
+
+      //for(let i=0;i<)
+
+      var basicMap = L.map("mapid").setView([23.579732, 80.442383], 5);
+
+      var geoJsonLayer = L.geoJSON(states, {
+        style: function(feature) {
+                    switch (feature.properties.NAME_0) {
+                        case  "Delhi": return {fillColor: temperature_colorcode.t5560,fillOpacity: 0.5,weight:0};
+                        case 'India':   return {fillColor: 'transparent',weight:0,fillOpacity: 0};
+                    }
+
+                    
+                },
+        onEachFeature: function (feature, layer) {
+          layer.bindPopup("Popup content");
+          var temp = "";
+          var location = "";
+          //mouseover also there
+          layer.on("click", function () {
+            console.log("Mouse over event", feature.properties);
+            (async () => {
+              try {
+                layer.setPopupContent("Loading...");
+                const responsePromise = apiCall(feature.properties.NAME_2);
+                responsePromise
+                  .then((responseData) => {
+                    temp = responseData.current.temp_c;
+                    location = responseData.location.name;
+                    updatePopupContent(temp, location);
+                  })
+                  .catch((error) => {
+                    console.error("There was a problem fetching data ", error);
+                  });
+              } catch (error) {
+                console.error("There was a problem fetching data : ", error);
+              }
+            })();
+          });
+          console.log("now temp ", temp);
+          var value = "Popup new" + temp;
+          //layer.bindPopup('Popup content '+temp);
+          layer.setPopupContent("Loading...");
+        },
+      }).addTo(basicMap);
+
+      // Creating a Layer object
+
+      // Adding layer to the map
+      basicMap.addLayer(layer);
+      // var jsonLayer = L.geoJSON(states).addTo(basicMap);
+
+      function updatePopupContent(temperature, location) {
+        console.log("updatePopupContent ", temperature);
+        var content = `<p>Current Temp : ${temperature} °C</p><p>Location : ${location}</p>`;
+        geoJsonLayer.eachLayer(function (layer) {
+          layer.setPopupContent(content);
+        });
       }
 
-                var basicMap = L.map('mapid').setView([23.579732, 80.442383],5);
+      async function apiCall(place) {
+        const url = "http://api.weatherapi.com/v1/current.json";
 
-                var geoJsonLayer=L.geoJSON(states, {
-                style: customStyle /*function(feature) {
-                    switch (feature.properties.TYPE) {
-                        case  "Union Territory": return {color: "#ff0000"};
-                        case 'State':   return {color: "#0000ff"};
-                    }
-                }*/
-            ,
+        const body = {};
+        const apiKey = "1d5279c0e48c4dd4a4e101603241002";
 
-                onEachFeature: function(feature,layer){
-               
-                layer.bindPopup('Popup content');
-                var temp='';
-                var location='';
-                //mouseover also there
-                layer.on('click',function(){
-                  console.log('Mouse over event',feature.properties);
-                 (async ()=>{
-                  try {
-                    layer.setPopupContent("Loading...");
-                    const responsePromise =  apiCall(feature.properties.NAME_2);
-                    responsePromise.then(responseData =>{
-                      temp=responseData.current.temp_c;
-                      location=responseData.location.name;
-                      updatePopupContent(temp,location);
-                      
-                    }).catch(error =>{
-                      console.error('There was a problem fetching data ',error);
-                    });
-                    
-                  }
-                  catch(error){
-                    console.error('There was a problem fetching data : ', error);
-                  }
-                 })();
-                });
-                console.log('now temp ',temp);
-                var value="Popup new"+ temp;
-                //layer.bindPopup('Popup content '+temp);
-                layer.setPopupContent("Loading...");
-               }}).addTo(basicMap);
+        const queryParams = {
+          key: apiKey,
+          q: place,
+        };
 
-                     // Creating a Layer object
+        const queryString = Object.keys(queryParams)
+          .map(
+            (key) =>
+              encodeURIComponent(key) +
+              "=" +
+              encodeURIComponent(queryParams[key])
+          )
+          .join("&");
+        console.log(queryString);
+        const apiUrl = url + "?" + queryString;
 
-                     // Adding layer to the map
-                     basicMap.addLayer(layer);
-               // var jsonLayer = L.geoJSON(states).addTo(basicMap);
-
-
-              function updatePopupContent(temperature,location){
-                console.log("updatePopupContent ",temperature);
-                var content=`<p>Current Temp : ${temperature} °C</p><p>Location : ${location}</p>`;
-                geoJsonLayer.eachLayer(function(layer){
-                  layer.setPopupContent(content);
-                })
-              }
-
-              async function apiCall(place){
-                const url ="http://api.weatherapi.com/v1/current.json";
-
-                const body ={};
-                const apiKey='1d5279c0e48c4dd4a4e101603241002';
-
-                const queryParams={
-                  key:apiKey,
-                  q:place
-                };
-
-                const queryString= Object.keys(queryParams).map(key=>
-                encodeURIComponent(key) + '='+encodeURIComponent(queryParams[key])).join('&');
-                console.log(queryString)
-                const apiUrl=url+'?'+queryString;
-                
-                const fetchOptions={
-                  method:'GET',
-                  headers:{
-                    'Content-Type':'application/json',
-                  }
-                }
-                console.log(apiUrl);
-               return fetch(apiUrl,fetchOptions).then(response=>{
-                  if(!response.ok){
-                    throw new Error('Network not responsding');
-                  }
-                  //console.log("response json",response.json())
-                  return response.json();
-
-                }).catch(error =>{
-                  console.error('Error occurred ',error);
-                })
-               }
+        const fetchOptions = {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        };
+        console.log(apiUrl);
+        return fetch(apiUrl, fetchOptions)
+          .then((response) => {
+            if (!response.ok) {
+              throw new Error("Network not responsding");
+            }
+            //console.log("response json",response.json())
+            return response.json();
+          })
+          .catch((error) => {
+            console.error("Error occurred ", error);
+          });
+      }
     </script>
   </body>
 </html>
