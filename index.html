@@ -4,6 +4,8 @@
       http-equiv="Content-Security-Policy"
       content="upgrade-insecure-requests"
     />
+    
+      <script src="script.js" ></script>
     <link
       rel="stylesheet"
       href="https://unpkg.com/leaflet@1.4.0/dist/leaflet.css"
@@ -17,7 +19,7 @@
     ></script>
 
     <script src="india_district.json"></script>
-     <script src="script.js"></script>
+    
     <style>
       #mapid {
         width: 820;
@@ -29,8 +31,10 @@
   </head>
   <body>
     <div id="mapid"></div>
+   
 
     <script>
+           
       var layer = new L.TileLayer(
         "http://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
       );
@@ -59,31 +63,21 @@
         fillOpacity: 0.5,
       };
 
-      var temperature_colorcode={
-        "t1005":"#002b03",
-        "t050":"#25a8fa",
-        "t005":"#47b7fc",
-        "t510":"#87d1ff",
-        "t1015":"#9fd9fc",
-        "t1520":"#c4e9ff",
-        "t2025":"#fcdea9",
-        
-        "t2530":"#fcc59a",
-        "t3035":"#ff875e",
-        "t3540":"#5c0101",
-        "t4045":"#fa6555",
-        "t4550":"#fa3620",
-        "t5055":"#9e1102",
-        "t5560":"#002b03"
-      };
+     
 
       var basicMap = L.map("mapid").setView([23.579732, 80.442383], 5);
-
+      console.log(" index html DistrictWiseTempMap",globalVariable);
+          
       var geoJsonLayer = L.geoJSON(states, {
         style: function(feature) {
+          if(DistrictWiseTempMap.hasOwnProperty(feature.properties.NAME_2)){
+            console.log(" DistrictWiseTempMap key exist",feature.properties.NAME_2);
+            let mapValue= DistrictWiseTempMap[feature.properties.NAME_2];
+            return {fillColor: mapValue[1],fillOpacity: 0.5,weight:0.5}
+          }
                     switch (feature.properties.NAME_0) {
                         case  "Delhi": return {fillColor: temperature_colorcode.t5560,fillOpacity: 0.5,weight:0};
-                        case 'India':   return {fillColor: 'transparent',weight:0,fillOpacity: 0};
+                        case 'India':   return {fillColor: 'blue',weight:0,fillOpacity: 0};
                     }
 
                     
@@ -98,11 +92,14 @@
             (async () => {
               try {
                 layer.setPopupContent("Loading...");
-                const responsePromise = apiCall(feature.properties.NAME_2);
+                const responsePromise = callWeatherapi(feature.properties.NAME_2);
                 responsePromise
                   .then((responseData) => {
                     temp = responseData.current.temp_c;
                     location = responseData.location.name;
+                    updateTempOfParticularDistrict(location,temp);
+                    //update District wise temp list of particular district
+
                     updatePopupContent(temp, location);
                   })
                   .catch((error) => {
@@ -132,48 +129,6 @@
         geoJsonLayer.eachLayer(function (layer) {
           layer.setPopupContent(content);
         });
-      }
-
-      async function apiCall(place) {
-        const url = "http://api.weatherapi.com/v1/current.json";
-
-        const body = {};
-        const apiKey = "1d5279c0e48c4dd4a4e101603241002";
-
-        const queryParams = {
-          key: apiKey,
-          q: place,
-        };
-
-        const queryString = Object.keys(queryParams)
-          .map(
-            (key) =>
-              encodeURIComponent(key) +
-              "=" +
-              encodeURIComponent(queryParams[key])
-          )
-          .join("&");
-        console.log(queryString);
-        const apiUrl = url + "?" + queryString;
-
-        const fetchOptions = {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-          },
-        };
-        console.log(apiUrl);
-        return fetch(apiUrl, fetchOptions)
-          .then((response) => {
-            if (!response.ok) {
-              throw new Error("Network not responsding");
-            }
-            //console.log("response json",response.json())
-            return response.json();
-          })
-          .catch((error) => {
-            console.error("Error occurred ", error);
-          });
       }
     </script>
   </body>
