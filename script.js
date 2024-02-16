@@ -81,15 +81,14 @@ async function getDistrictWiseTemp(){
       console.error("Error occurred ", error);
     });
 }
-
+/*
 async function updateDistrictWiseTemp(){
   const url ="localhost:3000/api/updatemaptemperature";
 }
-
+*/
 async function updateTempOfParticularDistrict(districtName,temp){
-  const url ="localhost:3000/api/updatemaptemperature";
   
-  const apiUrl ="http://localhost:3000/api/updatemaptemperature";
+  const apiUrl ="http://localhost:3000/api/updatetemperatureOfDistrict";
 
   const body = 
     {"temp":temp,
@@ -103,6 +102,7 @@ async function updateTempOfParticularDistrict(districtName,temp){
     headers: {
       "Content-Type": "application/json",
     },
+    body:JSON.stringify(body)
   };
   console.log(apiUrl);
   return fetch(apiUrl, fetchOptions)
